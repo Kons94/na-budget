@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N | A &mdash; Budget &amp; Agenda</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&family=Great+Vibes&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#f5f0e8;--cream-dark:#ede8de;--ink:#2c2825;--ink-light:#5a544e;
+  --gold:#b8986a;--gold-light:#d4b896;--gold-pale:#f0e8d8;--white:#fdfaf5;--border:#d4c9b4;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);color:var(--ink);font-family:'Cormorant Garamond',serif;min-height:100vh;}
+#sync-bar{position:fixed;top:0;left:0;right:0;background:var(--ink);color:var(--cream);text-align:center;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;padding:6px;z-index:999;transform:translateY(-100%);transition:transform .3s;}
+#sync-bar.show{transform:translateY(0);}
+#sync-bar.ok{background:#4a7a4a;}
+#sync-bar.err{background:#8a3a2a;}
+header{background:var(--white);border-bottom:1px solid var(--border);padding:44px 24px 24px;text-align:center;}
+.logo{font-family:'Cinzel',serif;font-size:52px;font-weight:600;letter-spacing:8px;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+.logo-sep{font-weight:300;font-size:40px;color:var(--gold);margin:0 6px;}
+.subtitle{font-family:'Great Vibes',cursive;font-size:22px;color:var(--ink-light);margin-top:6px;}
+.timer-bar{background:var(--ink);color:var(--cream);text-align:center;padding:14px 24px;display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);}
+.timer-label{font-family:'Great Vibes',cursive;font-size:18px;color:var(--gold-light);}
+.timer-blocks{display:flex;gap:16px;align-items:center;}
+.timer-block{text-align:center;}
+.timer-num{font-family:'Cinzel',serif;font-size:28px;font-weight:600;color:var(--gold-light);line-height:1;}
+.timer-unit{font-family:'Cormorant Garamond',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--cream);opacity:.7;margin-top:2px;}
+.timer-dot{color:var(--gold);font-size:24px;}
+.tabs{display:flex;justify-content:center;padding:28px 16px 0;max-width:1200px;margin:0 auto;flex-wrap:wrap;gap:5px;}
+.tab-btn{font-family:'Cinzel',serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;padding:11px 18px;border:1px solid var(--border);background:var(--cream-dark);color:var(--ink-light);cursor:pointer;transition:all .2s;border-radius:2px;}
+.tab-btn.active{background:var(--ink);color:var(--cream);border-color:var(--ink);}
+.tab-btn:hover:not(.active){background:var(--gold-pale);border-color:var(--gold);}
+main{max-width:1200px;margin:0 auto;padding:24px;}
+.panel{display:none;}.panel.active{display:block;}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.grand-total-bar{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;flex:1;}
+.grand-total-bar h2{font-family:'Cinzel',serif;font-size:13px;letter-spacing:3px;font-weight:400;color:var(--ink-light);text-transform:uppercase;}
+.grand-total-amount{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:var(--ink);}
+.grand-paid{font-size:14px;color:var(--gold);margin-left:16px;}
+.refresh-btn{background:none;border:1px solid var(--border);border-radius:2px;padding:10px 16px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:var(--ink-light);cursor:pointer;transition:all .15s;white-space:nowrap;}
+.refresh-btn:hover{border-color:var(--gold);color:var(--gold);}
+.category-section{margin-bottom:20px;background:var(--white);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.cat-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--cream-dark);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;}
+.cat-header-left{display:flex;align-items:center;gap:12px;}
+.cat-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.cat-name{font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:400;color:var(--ink);}
+.cat-total{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);}
+.cat-toggle{color:var(--gold);font-size:18px;transition:transform .2s;}
+.cat-toggle.open{transform:rotate(180deg);}
+.cat-body{padding:0 0 8px;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:400;color:var(--ink-light);padding:10px 16px;text-align:left;border-bottom:1px solid var(--cream-dark);}
+td{padding:9px 16px;font-size:16px;color:var(--ink);border-bottom:1px solid var(--cream-dark);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--gold-pale);}
+.td-desc input,.td-price input,.td-note input{background:none;border:none;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink);width:100%;outline:none;padding:0;}
+.td-price{width:110px;}.td-price input{text-align:right;width:80px;}
+.td-note input{font-size:14px;color:var(--ink-light);font-style:italic;}
+input:focus{border-bottom:1px solid var(--gold);}
+.td-check{width:40px;text-align:center;}
+.check-box{width:18px;height:18px;border:1px solid var(--border);border-radius:2px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:transparent;background:var(--cream);transition:all .15s;user-select:none;flex-shrink:0;}
+.check-box.checked{background:var(--gold);border-color:var(--gold);color:white;}
+tr.purchased td{opacity:.55;}tr.purchased .td-desc input{text-decoration:line-through;}
+.td-status{width:110px;}
+.status-sel{font-family:'Cormorant Garamond',serif;font-size:13px;border:1px solid var(--border);background:var(--cream);color:var(--ink);padding:3px 8px;border-radius:20px;cursor:pointer;outline:none;width:100%;}
+.status-sel.paid{border-color:#7ab37a;color:#4a7a4a;background:#f0f8f0;}
+.status-sel.pending{border-color:var(--gold);color:#8a6a2a;background:#fdf6e8;}
+.btn-del{background:none;border:none;color:var(--border);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:2px;transition:color .15s;line-height:1;}
+.btn-del:hover{color:#c0604a;}
+.add-row-btn{display:flex;align-items:center;gap:8px;margin:10px 16px 4px;background:none;border:1px dashed var(--border);border-radius:2px;padding:8px 16px;font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--ink-light);cursor:pointer;width:calc(100% - 32px);transition:all .15s;font-style:italic;}
+.add-row-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-pale);}
+.checklist-section{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:24px;}
+.section-title{font-family:'Cinzel',serif;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--ink-light);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.checklist-items{list-style:none;}
+.checklist-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--cream-dark);}
+.checklist-item:last-child{border-bottom:none;}
+.checklist-item.done .item-text{text-decoration:line-through;opacity:.5;}
+.item-text{flex:1;background:none;border:none;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink);outline:none;}
+.item-text:focus{border-bottom:1px solid var(--gold);}
+.add-check-row{display:flex;gap:8px;margin-top:12px;}
+.add-check-input{flex:1;background:var(--cream);border:1px solid var(--border);border-radius:2px;padding:8px 12px;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink);outline:none;font-style:italic;}
+.add-check-input:focus{border-color:var(--gold);}
+.btn-add{background:var(--ink);color:var(--cream);border:none;border-radius:2px;padding:8px 20px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;transition:background .15s;white-space:nowrap;}
+.btn-add:hover{background:var(--gold);}
+.monthly-header{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:20px 24px;margin-bottom:16px;}
+.month-nav{display:flex;align-items:center;margin-bottom:18px;}
+.month-nav-btn{background:none;border:1px solid var(--border);padding:9px 16px;font-family:'Cinzel',serif;font-size:12px;color:var(--ink-light);cursor:pointer;transition:all .15s;}
+.month-nav-btn:first-child{border-radius:2px 0 0 2px;}
+.month-nav-btn:last-child{border-radius:0 2px 2px 0;}
+.month-nav-btn:hover{border-color:var(--gold);color:var(--gold);}
+.month-nav-btn:disabled{opacity:.3;pointer-events:none;}
+.month-label{font-family:'Cinzel',serif;font-size:15px;letter-spacing:3px;color:var(--ink);flex:1;text-align:center;padding:9px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.monthly-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mstat{text-align:center;padding:14px 8px;background:var(--cream);border-radius:4px;border:1px solid var(--border);}
+.mstat-num{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--ink);}
+.mstat-num.green{color:#4a7a4a;}
+.mstat-num.red{color:#8a3a2a;}
+.mstat-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-light);margin-top:4px;}
+.monthly-summary{border-radius:4px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px;font-size:16px;}
+.monthly-summary.better{background:#f0f8f0;border:1px solid #7ab37a;color:#3a6a3a;}
+.monthly-summary.worse{background:#fdf0e0;border:1px solid var(--gold);color:#8a5a1a;}
+.monthly-summary.same{background:var(--cream-dark);border:1px solid var(--border);color:var(--ink-light);}
+.summary-icon{font-size:22px;}
+.monthly-list{background:var(--white);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:16px;}
+.monthly-list-head{display:grid;grid-template-columns:44px 1fr 120px 100px 44px;padding:10px 16px;background:var(--cream-dark);border-bottom:1px solid var(--border);}
+.monthly-list-head span{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-light);}
+.monthly-item{display:grid;grid-template-columns:44px 1fr 120px 100px 44px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--cream-dark);transition:background .1s;}
+.monthly-item:last-child{border-bottom:none;}
+.monthly-item:hover{background:var(--gold-pale);}
+.monthly-item.paid-item{opacity:.6;}
+.monthly-item.paid-item .mi-name{text-decoration:line-through;}
+.mi-check{display:flex;justify-content:center;}
+.mi-name{font-size:17px;color:var(--ink);}
+.mi-price-wrap{display:flex;align-items:center;gap:4px;justify-content:flex-end;}
+.mi-price{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--ink);background:none;border:none;outline:none;width:80px;text-align:right;}
+.mi-price:focus{border-bottom:1px solid var(--gold);}
+.mi-cat{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--gold-pale);color:var(--gold);font-family:'Cinzel',serif;letter-spacing:1px;text-align:center;}
+.mi-del{display:flex;justify-content:center;}
+.add-monthly-form{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:16px 20px;margin-bottom:20px;}
+.add-monthly-inputs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.add-monthly-inputs input,.add-monthly-inputs select{background:var(--cream);border:1px solid var(--border);border-radius:2px;padding:9px 12px;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink);outline:none;}
+.add-monthly-inputs input:focus,.add-monthly-inputs select:focus{border-color:var(--gold);}
+.add-monthly-inputs input[name=desc]{flex:2;min-width:140px;}
+.add-monthly-inputs input[name=price]{width:100px;}
+.add-monthly-inputs select{flex:1;min-width:120px;}
+.archive-btn{background:none;border:1px solid var(--border);border-radius:2px;padding:8px 16px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:var(--ink-light);cursor:pointer;margin-bottom:14px;transition:all .15s;}
+.archive-btn:hover{border-color:var(--gold);color:var(--gold);}
+.archive-list{background:var(--white);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:24px;display:none;}
+.archive-list.open{display:block;}
+.archive-item{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--cream-dark);cursor:pointer;transition:background .1s;}
+.archive-item:last-child{border-bottom:none;}
+.archive-item:hover{background:var(--gold-pale);}
+.archive-item-name{font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;color:var(--ink);}
+.archive-item-total{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink);}
+.calendar-section{background:var(--white);border:1px solid var(--border);border-radius:4px;margin-bottom:24px;overflow:hidden;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--cream-dark);border-bottom:1px solid var(--border);}
+.cal-title{font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);}
+.cal-nav{display:flex;align-items:center;gap:16px;}
+.cal-nav button{background:none;border:none;color:var(--gold);font-size:22px;cursor:pointer;padding:0 4px;line-height:1;}
+.cal-month-label{font-family:'Cinzel',serif;font-size:13px;letter-spacing:1px;color:var(--ink);min-width:150px;text-align:center;}
+.cal-grid{padding:16px;}
+.cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
+.cal-day-name{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-light);text-align:center;padding:4px 0;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-day{min-height:54px;border:1px solid var(--border);border-radius:2px;padding:4px;cursor:pointer;transition:all .15s;background:var(--cream);}
+.cal-day:hover{border-color:var(--gold);background:var(--gold-pale);}
+.cal-day.today{border-color:var(--gold);background:var(--gold-pale);}
+.cal-day.other-month{opacity:.35;}
+.cal-day.wedding-day{border-color:var(--gold);background:#f5ead8;}
+.cal-day-num{font-family:'Cinzel',serif;font-size:12px;color:var(--ink);line-height:1;}
+.cal-event-dot{font-size:9px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:2px;padding:1px 3px;margin-bottom:1px;}
+.cal-event-dot.rdv{background:#e8f0e8;color:#3a6a3a;border-left:2px solid #7ab37a;}
+.cal-event-dot.paiement{background:#fdf0e0;color:#8a5a1a;border-left:2px solid var(--gold);}
+.upcoming-section{background:var(--white);border:1px solid var(--border);border-radius:4px;padding:20px;margin-bottom:24px;}
+.event-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--cream-dark);font-size:15px;}
+.event-item:last-child{border-bottom:none;}
+.event-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-family:'Cinzel',serif;letter-spacing:1px;flex-shrink:0;}
+.event-badge.rdv{background:#e8f0e8;color:#3a6a3a;}
+.event-badge.paiement{background:#fdf0e0;color:#8a5a1a;}
+.upcoming-date{font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;color:var(--ink-light);min-width:70px;}
+.upcoming-soon{color:var(--gold);font-size:16px;}
+.event-modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,40,37,.6);z-index:1000;align-items:flex-end;justify-content:center;}
+.event-modal-overlay.open{display:flex;}
+.event-modal{background:var(--white);border-radius:8px 8px 0 0;padding:24px;width:100%;max-width:500px;}
+.event-modal-date{font-family:'Great Vibes',cursive;font-size:20px;color:var(--gold);margin-bottom:6px;}
+.event-modal h3{font-family:'Cinzel',serif;font-size:13px;letter-spacing:2px;margin-bottom:14px;color:var(--ink);}
+.event-list{list-style:none;margin-bottom:14px;}
+.add-event-form{display:flex;flex-direction:column;gap:8px;}
+.add-event-form input,.add-event-form select{background:var(--cream);border:1px solid var(--border);border-radius:2px;padding:9px 12px;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink);outline:none;}
+.add-event-form input:focus,.add-event-form select:focus{border-color:var(--gold);}
+.add-event-btns{display:flex;gap:8px;margin-top:4px;}
+.btn-primary{background:var(--ink);color:var(--cream);border:none;border-radius:2px;padding:10px 20px;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;cursor:pointer;flex:1;transition:background .15s;}
+.btn-primary:hover{background:var(--gold);}
+.btn-secondary{background:none;border:1px solid var(--border);border-radius:2px;padding:10px 16px;font-family:'Cinzel',serif;font-size:11px;cursor:pointer;color:var(--ink-light);}
+footer{text-align:center;padding:32px;font-family:'Great Vibes',cursive;font-size:22px;color:var(--gold);opacity:.7;}
+@media(max-width:640px){
+  .logo{font-size:38px;}.timer-num{font-size:22px;}.timer-blocks{gap:10px;}
+  th,td{padding:8px 6px;}.tab-btn{padding:9px 12px;font-size:10px;}
+  .monthly-list-head,.monthly-item{grid-template-columns:40px 1fr 90px 40px;}
+  .mi-cat{display:none;}.cal-day{min-height:40px;}.cal-event-dot{display:none;}
+  .add-monthly-inputs{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<div id="sync-bar"></div>
+
+<div class="event-modal-overlay" id="event-modal">
+  <div class="event-modal">
+    <div class="event-modal-date" id="event-modal-date"></div>
+    <h3>&#201;V&#201;NEMENTS</h3>
+    <ul class="event-list" id="event-list"></ul>
+    <div class="add-event-form">
+      <input type="text" id="new-event-title" placeholder="Ex: RDV traiteur, Acompte salle...">
+      <select id="new-event-type">
+        <option value="rdv">&#128197; Rendez-vous</option>
+        <option value="paiement">&#128176; Paiement</option>
+      </select>
+      <div class="add-event-btns">
+        <button class="btn-secondary" onclick="closeEventModal()">Fermer</button>
+        <button class="btn-primary" onclick="addEvent()">+ Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">N<span class="logo-sep">|</span>A</div>
+  <div class="subtitle">Nadine &amp; Abdelkader &mdash; 30 mai 2026</div>
+</header>
+
+<div class="timer-bar">
+  <span class="timer-label">Notre grand jour dans...</span>
+  <div class="timer-blocks">
+    <div class="timer-block"><div class="timer-num" id="t-days">&#8211;</div><div class="timer-unit">Jours</div></div>
+    <div class="timer-dot">&#183;</div>
+    <div class="timer-block"><div class="timer-num" id="t-hours">&#8211;</div><div class="timer-unit">Heures</div></div>
+    <div class="timer-dot">&#183;</div>
+    <div class="timer-block"><div class="timer-num" id="t-mins">&#8211;</div><div class="timer-unit">Minutes</div></div>
+    <div class="timer-dot">&#183;</div>
+    <div class="timer-block"><div class="timer-num" id="t-secs">&#8211;</div><div class="timer-unit">Secondes</div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showPanel('mariage',this)">&#128141; Mariage</button>
+  <button class="tab-btn" onclick="showPanel('appartement',this)">&#127968; Appartement</button>
+  <button class="tab-btn" onclick="showPanel('agenda',this)">&#128197; Agenda</button>
+  <button class="tab-btn" onclick="showPanel('mensuel',this)">&#128198; Frais mensuels</button>
+</div>
+
+<main>
+
+<div id="panel-mariage" class="panel active">
+  <div class="top-bar">
+    <div class="grand-total-bar">
+      <div><h2>Budget Total Mariage</h2><small style="font-size:13px;color:var(--ink-light);font-style:italic">Toutes cat&eacute;gories confondues</small></div>
+      <div><span class="grand-total-amount" id="grand-total-mariage">0 &euro;</span><span class="grand-paid" id="grand-paid-mariage"></span></div>
+    </div>
+    <button class="refresh-btn" onclick="loadFromCloud()">&#8635; Rafra&#238;chir</button>
+  </div>
+  <div id="cats-mariage"></div>
+  <div class="checklist-section">
+    <div class="section-title">&#192; faire / &#192; acheter</div>
+    <ul class="checklist-items" id="checklist-mariage"></ul>
+    <div class="add-check-row">
+      <input class="add-check-input" id="new-check-mariage" placeholder="Ajouter un &#233;l&#233;ment..." onkeydown="if(event.key==='Enter')addCheck('mariage')">
+      <button class="btn-add" onclick="addCheck('mariage')">+ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div id="panel-appartement" class="panel">
+  <div class="top-bar">
+    <div class="grand-total-bar">
+      <div><h2>Budget Total Appartement</h2><small style="font-size:13px;color:var(--ink-light);font-style:italic">Toutes pi&egrave;ces confondues</small></div>
+      <div><span class="grand-total-amount" id="grand-total-appart">0 &euro;</span><span class="grand-paid" id="grand-paid-appart"></span></div>
+    </div>
+    <button class="refresh-btn" onclick="loadFromCloud()">&#8635; Rafra&#238;chir</button>
+  </div>
+  <div id="cats-appart"></div>
+  <div class="checklist-section">
+    <div class="section-title">&#192; acheter pour l'appartement</div>
+    <ul class="checklist-items" id="checklist-appart"></ul>
+    <div class="add-check-row">
+      <input class="add-check-input" id="new-check-appart" placeholder="Ajouter un &#233;l&#233;ment..." onkeydown="if(event.key==='Enter')addCheck('appart')">
+      <button class="btn-add" onclick="addCheck('appart')">+ Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<div id="panel-agenda" class="panel">
+  <div class="top-bar" style="margin-bottom:20px;">
+    <div class="grand-total-bar" style="padding:14px 20px;">
+      <div><h2>Agenda N &amp; A</h2><small style="font-size:13px;color:var(--ink-light);font-style:italic">RDV &amp; paiements &#224; venir</small></div>
+    </div>
+    <button class="refresh-btn" onclick="loadFromCloud()">&#8635; Rafra&#238;chir</button>
+  </div>
+  <div class="upcoming-section">
+    <div class="section-title">Prochainement</div>
+    <ul id="upcoming-list" class="event-list"></ul>
+    <p id="upcoming-empty" style="display:none;font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink-light);font-style:italic">Aucun &#233;v&#233;nement &#8212; clique sur un jour du calendrier !</p>
+  </div>
+  <div class="calendar-section">
+    <div class="cal-header">
+      <div class="cal-title">Calendrier</div>
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <div class="cal-month-label" id="cal-month-label"></div>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-days-header">
+        <div class="cal-day-name">Lun</div><div class="cal-day-name">Mar</div><div class="cal-day-name">Mer</div>
+        <div class="cal-day-name">Jeu</div><div class="cal-day-name">Ven</div><div class="cal-day-name">Sam</div><div class="cal-day-name">Dim</div>
+      </div>
+      <div class="cal-days" id="cal-days"></div>
+    </div>
+  </div>
+</div>
+
+<div id="panel-mensuel" class="panel">
+  <div class="top-bar">
+    <div class="grand-total-bar" style="padding:14px 20px;">
+      <div><h2>Frais Mensuels</h2><small style="font-size:13px;color:var(--ink-light);font-style:italic">D&eacute;penses r&eacute;currentes</small></div>
+    </div>
+    <button class="refresh-btn" onclick="loadFromCloud()">&#8635; Rafra&#238;chir</button>
+  </div>
+  <div class="monthly-header">
+    <div class="month-nav">
+      <button class="month-nav-btn" onclick="changeViewMonth(-1)">&#8249; Pr&eacute;c.</button>
+      <div class="month-label" id="monthly-month-label">&#8212;</div>
+      <button class="month-nav-btn" id="btn-next-month" onclick="changeViewMonth(1)">Suiv. &#8250;</button>
+    </div>
+    <div id="monthly-summary-bar"></div>
+    <div class="monthly-stats">
+      <div class="mstat"><div class="mstat-num" id="ms-total">0 &euro;</div><div class="mstat-label">Total</div></div>
+      <div class="mstat"><div class="mstat-num green" id="ms-paid">0 &euro;</div><div class="mstat-label">Pay&eacute; &#10003;</div></div>
+      <div class="mstat"><div class="mstat-num red" id="ms-remaining">0 &euro;</div><div class="mstat-label">Reste</div></div>
+    </div>
+  </div>
+  <div class="monthly-list">
+    <div class="monthly-list-head">
+      <span></span><span>D&eacute;pense</span><span style="text-align:right">Montant</span><span>Cat&eacute;gorie</span><span></span>
+    </div>
+    <div id="monthly-items"></div>
+  </div>
+  <div class="add-monthly-form">
+    <div class="section-title">Ajouter une d&eacute;pense r&eacute;currente</div>
+    <div class="add-monthly-inputs">
+      <input name="desc" id="new-monthly-desc" placeholder="Nom de la d&eacute;pense..." onkeydown="if(event.key==='Enter')addMonthlyItem()">
+      <input name="price" id="new-monthly-price" type="number" placeholder="Montant" min="0" step="0.01">
+      <select id="new-monthly-cat">
+        <option value="Logement">Logement</option>
+        <option value="Energie">Energie</option>
+        <option value="Assurance">Assurance</option>
+        <option value="Abonnement">Abonnement</option>
+        <option value="Transport">Transport</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <button class="btn-add" onclick="addMonthlyItem()">+ Ajouter</button>
+    </div>
+  </div>
+  <button class="archive-btn" onclick="toggleArchive()">Historique des mois pr&eacute;c&eacute;dents</button>
+  <div class="archive-list" id="archive-list"></div>
+</div>
+
+</main>
+<footer>N &amp; A &#9825; 30 mai 2026</footer>
+
+<script>
+var API_KEY = '$2a$10$YXlCnix2gZZtgX9eNhWaBujcJI8kCm/LK85blBeC/OPTmDx26rLOS';
+var BIN_ID  = '69b52e25c3097a1dd5241de9';
+var MARIAGE_CATS = ['Mariage','Prestataire','Nadine','Kader'];
+var APPART_CATS  = ['Cuisine','Salon','Chambre','Salle de bain','Frais global'];
+var MONTHS_FR = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
+var DEFAULT_RECURRING = [
+  {id:'r1',desc:'Loyer',price:1000,cat:'Logement'},
+  {id:'r2',desc:'Electricite',price:52,cat:'Energie'},
+  {id:'r3',desc:'Gaz',price:52,cat:'Energie'},
+  {id:'r4',desc:'Assurance habitation',price:13,cat:'Assurance'},
+  {id:'r5',desc:'Assurance voiture',price:50,cat:'Assurance'},
+  {id:'r6',desc:'Box internet',price:30,cat:'Abonnement'},
+  {id:'r7',desc:'Forfait telephone',price:30,cat:'Abonnement'},
+  {id:'r8',desc:'Netflix',price:15,cat:'Abonnement'}
+];
+
+var data = makeEmpty();
+var nowD = new Date();
+var calYear=nowD.getFullYear(), calMonth=nowD.getMonth();
+var viewYear=nowD.getFullYear(), viewMonth=nowD.getMonth();
+
+function makeEmpty(){
+  var m={},a={};
+  MARIAGE_CATS.forEach(function(c){m[c]={rows:[],open:true};});
+  APPART_CATS.forEach(function(c){a[c]={rows:[],open:true};});
+  return {mariage:m,appart:a,checklist_mariage:[],checklist_appart:[],events:{},
+    recurring:JSON.parse(JSON.stringify(DEFAULT_RECURRING)),monthly:{}};
+}
+function ensureData(){
+  MARIAGE_CATS.forEach(function(c){if(!data.mariage[c])data.mariage[c]={rows:[],open:true};});
+  APPART_CATS.forEach(function(c){if(!data.appart[c])data.appart[c]={rows:[],open:true};});
+  if(!data.checklist_mariage)data.checklist_mariage=[];
+  if(!data.checklist_appart)data.checklist_appart=[];
+  if(!data.events)data.events={};
+  if(!data.recurring)data.recurring=JSON.parse(JSON.stringify(DEFAULT_RECURRING));
+  if(!data.monthly)data.monthly={};
+  ensureMonth(viewYear,viewMonth);
+}
+function monthKey(y,m){return y+'-'+(m+1<10?'0':'')+(m+1);}
+function ensureMonth(y,m){
+  var k=monthKey(y,m);
+  if(!data.monthly[k]){
+    data.monthly[k]={items:data.recurring.map(function(r){
+      return {id:r.id+'_'+k,desc:r.desc,price:r.price,cat:r.cat,paid:false};
+    })};
+  }
+}
+
+var syncT;
+function showSync(msg,type){
+  var b=document.getElementById('sync-bar');
+  b.textContent=msg;b.className='show '+(type||'');
+  clearTimeout(syncT);syncT=setTimeout(function(){b.className='';},2500);
+}
+
+function loadFromCloud(){
+  showSync('Chargement...');
+  fetch('https://api.jsonbin.io/v3/b/'+BIN_ID+'/latest',{headers:{'X-Master-Key':API_KEY}})
+  .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(j){data=j.record;ensureData();renderAll();showSync('A jour','ok');})
+  .catch(function(e){showSync('Erreur reseau','err');console.error(e);});
+}
+var saveTimer;
+function saveToCloud(){
+  showSync('Sauvegarde...');
+  fetch('https://api.jsonbin.io/v3/b/'+BIN_ID,{
+    method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+    body:JSON.stringify(data)
+  })
+  .then(function(r){if(!r.ok)throw new Error(r.status);showSync('Sauvegarde OK','ok');})
+  .catch(function(){showSync('Erreur sauvegarde','err');});
+}
+function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(saveToCloud,1000);}
+
+function showPanel(id,btn){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('panel-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='agenda'){renderCalendar();renderUpcoming();}
+  if(id==='mensuel'){ensureMonth(viewYear,viewMonth);renderMonthly();}
+}
+
+function renderAll(){
+  renderPanel('mariage',data.mariage,MARIAGE_CATS,'cats-mariage');
+  renderPanel('appart',data.appart,APPART_CATS,'cats-appart');
+  updateGrandTotals();renderChecklists();renderCalendar();renderUpcoming();renderMonthly();
+}
+
+function renderPanel(panel,catData,cats,cid){
+  var cont=document.getElementById(cid);cont.innerHTML='';
+  cats.forEach(function(cat){
+    var rows=catData[cat].rows;
+    var total=rows.reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
+    var isOpen=catData[cat].open!==false;
+    var sec=document.createElement('div');sec.className='category-section';
+    var tbid='tbody-'+panel+'-'+cat.replace(/ /g,'_');
+    sec.innerHTML='<div class="cat-header" onclick="toggleCat(\''+panel+'\',\''+esc(cat)+'\')">'
+      +'<div class="cat-header-left"><div class="cat-dot"></div><div class="cat-name">'+cat+'</div></div>'
+      +'<div style="display:flex;align-items:center;gap:16px;">'
+      +'<div class="cat-total">'+total.toLocaleString('fr-FR')+' &euro;</div>'
+      +'<span class="cat-toggle '+(isOpen?'open':'')+'">&#9662;</span>'
+      +'</div></div>'
+      +'<div class="cat-body" style="display:'+(isOpen?'block':'none')+'">'
+      +'<table><thead><tr><th style="width:36px"></th><th>Description</th><th>Note</th>'
+      +'<th style="width:110px">Statut</th><th style="width:110px;text-align:right">Montant</th><th style="width:40px"></th>'
+      +'</tr></thead><tbody id="'+tbid+'"></tbody></table>'
+      +'<button class="add-row-btn" onclick="addRow(\''+panel+'\',\''+esc(cat)+'\')">+ Ajouter une depense</button>'
+      +'</div>';
+    cont.appendChild(sec);
+    var tbody=document.getElementById(tbid);
+    rows.forEach(function(row){tbody.appendChild(makeRowEl(panel,cat,row));});
+  });
+}
+
+function makeRowEl(panel,cat,row){
+  var tr=document.createElement('tr');
+  if(row.status==='paid')tr.classList.add('purchased');
+  var sc=row.status==='paid'?'paid':row.status==='pending'?'pending':'todo';
+  var rid=String(row.id);
+  tr.innerHTML=
+    '<td class="td-check"><div class="check-box '+(row.status==='paid'?'checked':'')+'" onclick="togglePaid(\''+panel+'\',\''+esc(cat)+'\',\''+rid+'\')">&#10003;</div></td>'
+    +'<td class="td-desc"><input type="text" value="'+esc(row.desc)+'" placeholder="Description..." onchange="updateRow(\''+panel+'\',\''+esc(cat)+'\',\''+rid+'\',\'desc\',this.value)"></td>'
+    +'<td class="td-note"><input type="text" value="'+esc(row.note||'')+'" placeholder="Note..." onchange="updateRow(\''+panel+'\',\''+esc(cat)+'\',\''+rid+'\',\'note\',this.value)"></td>'
+    +'<td class="td-status"><select class="status-sel '+sc+'" onchange="updateRow(\''+panel+'\',\''+esc(cat)+'\',\''+rid+'\',\'status\',this.value);this.className=\'status-sel \'+this.value">'
+    +'<option value="todo"'+(row.status==='todo'?' selected':'')+'>A prevoir</option>'
+    +'<option value="pending"'+(row.status==='pending'?' selected':'')+'>En attente</option>'
+    +'<option value="paid"'+(row.status==='paid'?' selected':'')+'>Paye</option>'
+    +'</select></td>'
+    +'<td class="td-price"><input type="number" value="'+(row.price||'')+'" placeholder="0" min="0" step="0.01" onchange="updateRow(\''+panel+'\',\''+esc(cat)+'\',\''+rid+'\',\'price\',this.value)"> &euro;</td>'
+    +'<td><button class="btn-del" onclick="delRow(\''+panel+'\',\''+esc(cat)+'\',\''+rid+'\')">&#10005;</button></td>';
+  return tr;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+function addRow(panel,cat){data[panel][cat].rows.push({id:Date.now()+Math.random(),desc:'',price:'',note:'',status:'todo'});renderAll();scheduleSave();}
+function delRow(panel,cat,id){data[panel][cat].rows=data[panel][cat].rows.filter(function(r){return String(r.id)!==id;});renderAll();scheduleSave();}
+function updateRow(panel,cat,id,field,val){var row=data[panel][cat].rows.filter(function(r){return String(r.id)===id;})[0];if(row){row[field]=val;updateGrandTotals();scheduleSave();}}
+function togglePaid(panel,cat,id){var row=data[panel][cat].rows.filter(function(r){return String(r.id)===id;})[0];if(row){row.status=row.status==='paid'?'todo':'paid';renderAll();scheduleSave();}}
+function toggleCat(panel,cat){data[panel][cat].open=!data[panel][cat].open;renderAll();}
+
+function updateGrandTotals(){
+  [{panel:'mariage',cats:MARIAGE_CATS,sfx:'mariage'},{panel:'appart',cats:APPART_CATS,sfx:'appart'}].forEach(function(x){
+    var rows=[];x.cats.forEach(function(c){rows=rows.concat(data[x.panel][c].rows);});
+    var total=rows.reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
+    var paid=rows.filter(function(r){return r.status==='paid';}).reduce(function(s,r){return s+(parseFloat(r.price)||0);},0);
+    document.getElementById('grand-total-'+x.sfx).textContent=total.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac';
+    document.getElementById('grand-paid-'+x.sfx).textContent=paid>0?'dont '+paid.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac payes':'';
+  });
+}
+
+function renderChecklists(){renderCL('mariage',data.checklist_mariage);renderCL('appart',data.checklist_appart);}
+function renderCL(panel,items){
+  var ul=document.getElementById('checklist-'+panel);ul.innerHTML='';
+  items.forEach(function(item,i){
+    var li=document.createElement('li');li.className='checklist-item'+(item.done?' done':'');
+    li.innerHTML='<div class="check-box '+(item.done?'checked':'')+'" onclick="toggleCheck(\''+panel+'\','+i+')">&#10003;</div>'
+      +'<input class="item-text" value="'+esc(item.text)+'" onchange="editCheck(\''+panel+'\','+i+',this.value)">'
+      +'<button class="btn-del" onclick="delCheck(\''+panel+'\','+i+')">&#10005;</button>';
+    ul.appendChild(li);
+  });
+}
+function addCheck(panel){var inp=document.getElementById('new-check-'+panel);var t=inp.value.trim();if(!t)return;data['checklist_'+panel].push({text:t,done:false});inp.value='';renderChecklists();scheduleSave();}
+function toggleCheck(panel,i){data['checklist_'+panel][i].done=!data['checklist_'+panel][i].done;renderChecklists();scheduleSave();}
+function delCheck(panel,i){data['checklist_'+panel].splice(i,1);renderChecklists();scheduleSave();}
+function editCheck(panel,i,val){data['checklist_'+panel][i].text=val;scheduleSave();}
+
+function changeViewMonth(dir){
+  viewMonth+=dir;
+  if(viewMonth>11){viewMonth=0;viewYear++;}
+  if(viewMonth<0){viewMonth=11;viewYear--;}
+  ensureMonth(viewYear,viewMonth);renderMonthly();
+}
+function renderMonthly(){
+  var key=monthKey(viewYear,viewMonth);
+  var rn=new Date();
+  var isFuture=viewYear>rn.getFullYear()||(viewYear===rn.getFullYear()&&viewMonth>rn.getMonth());
+  document.getElementById('monthly-month-label').textContent=MONTHS_FR[viewMonth]+' '+viewYear;
+  document.getElementById('btn-next-month').disabled=isFuture;
+  var items=(data.monthly[key]&&data.monthly[key].items)||[];
+  var total=items.reduce(function(s,i){return s+(parseFloat(i.price)||0);},0);
+  var paid=items.filter(function(i){return i.paid;}).reduce(function(s,i){return s+(parseFloat(i.price)||0);},0);
+  document.getElementById('ms-total').textContent=total.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac';
+  document.getElementById('ms-paid').textContent=paid.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac';
+  document.getElementById('ms-remaining').textContent=(total-paid).toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac';
+  var pm=viewMonth===0?11:viewMonth-1,py=viewMonth===0?viewYear-1:viewYear;
+  var prevKey=monthKey(py,pm);
+  var prevItems=(data.monthly[prevKey]&&data.monthly[prevKey].items)||[];
+  var prevTotal=prevItems.reduce(function(s,i){return s+(parseFloat(i.price)||0);},0);
+  var sb=document.getElementById('monthly-summary-bar');
+  if(prevTotal>0){
+    var diff=total-prevTotal;
+    var absDiff=Math.abs(diff).toLocaleString('fr-FR',{minimumFractionDigits:2});
+    if(diff<0)sb.innerHTML='<div class="monthly-summary better"><span class="summary-icon">&#128201;</span><span>Vous depensez <strong>'+absDiff+' \u20ac de moins</strong> que '+MONTHS_FR[pm]+'</span></div>';
+    else if(diff>0)sb.innerHTML='<div class="monthly-summary worse"><span class="summary-icon">&#128200;</span><span>Vous depensez <strong>'+absDiff+' \u20ac de plus</strong> que '+MONTHS_FR[pm]+'</span></div>';
+    else sb.innerHTML='<div class="monthly-summary same"><span class="summary-icon">&#128202;</span><span>Meme montant que '+MONTHS_FR[pm]+'</span></div>';
+  }else{sb.innerHTML='';}
+  var cont=document.getElementById('monthly-items');cont.innerHTML='';
+  if(!items.length){cont.innerHTML='<div style="padding:20px;text-align:center;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--ink-light);font-style:italic">Aucune depense ce mois</div>';return;}
+  var sorted=items.slice().sort(function(a,b){return a.cat.localeCompare(b.cat);});
+  sorted.forEach(function(item){
+    var div=document.createElement('div');div.className='monthly-item'+(item.paid?' paid-item':'');
+    div.innerHTML='<div class="mi-check"><div class="check-box '+(item.paid?'checked':'')+'" onclick="toggleMonthlyPaid(\''+esc(key)+'\',\''+esc(item.id)+'\')">&#10003;</div></div>'
+      +'<div class="mi-name">'+esc(item.desc)+'</div>'
+      +'<div class="mi-price-wrap"><input class="mi-price" type="number" value="'+item.price+'" min="0" step="0.01" onchange="updateMonthlyPrice(\''+esc(key)+'\',\''+esc(item.id)+'\',this.value)"> \u20ac</div>'
+      +'<div class="mi-cat">'+esc(item.cat)+'</div>'
+      +'<div class="mi-del"><button class="btn-del" onclick="delMonthlyItem(\''+esc(key)+'\',\''+esc(item.id)+'\')">&#10005;</button></div>';
+    cont.appendChild(div);
+  });
+  renderArchive();
+}
+function toggleMonthlyPaid(key,id){var item=data.monthly[key].items.filter(function(i){return i.id===id;})[0];if(item){item.paid=!item.paid;renderMonthly();scheduleSave();}}
+function updateMonthlyPrice(key,id,val){
+  var item=data.monthly[key].items.filter(function(i){return i.id===id;})[0];
+  if(item){item.price=parseFloat(val)||0;var rec=data.recurring.filter(function(r){return id.indexOf(r.id+'_')===0;})[0];if(rec)rec.price=item.price;renderMonthly();scheduleSave();}
+}
+function delMonthlyItem(key,id){data.monthly[key].items=data.monthly[key].items.filter(function(i){return i.id!==id;});renderMonthly();scheduleSave();}
+function addMonthlyItem(){
+  var desc=document.getElementById('new-monthly-desc').value.trim();
+  var price=parseFloat(document.getElementById('new-monthly-price').value)||0;
+  var cat=document.getElementById('new-monthly-cat').value;
+  if(!desc)return;
+  var key=monthKey(viewYear,viewMonth);
+  var id='custom_'+Date.now();
+  data.monthly[key].items.push({id:id+'_'+key,desc:desc,price:price,cat:cat,paid:false});
+  data.recurring.push({id:id,desc:desc,price:price,cat:cat});
+  document.getElementById('new-monthly-desc').value='';
+  document.getElementById('new-monthly-price').value='';
+  renderMonthly();scheduleSave();
+}
+function toggleArchive(){document.getElementById('archive-list').classList.toggle('open');}
+function renderArchive(){
+  var el=document.getElementById('archive-list');el.innerHTML='';
+  var curKey=monthKey(viewYear,viewMonth);
+  var keys=Object.keys(data.monthly).sort().reverse().filter(function(k){return k!==curKey;});
+  if(!keys.length){el.innerHTML='<div style="padding:16px 20px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--ink-light);font-style:italic">Aucun historique pour l instant.</div>';return;}
+  keys.forEach(function(key){
+    var items=(data.monthly[key]&&data.monthly[key].items)||[];
+    var total=items.reduce(function(s,i){return s+(parseFloat(i.price)||0);},0);
+    var paid=items.filter(function(i){return i.paid;}).reduce(function(s,i){return s+(parseFloat(i.price)||0);},0);
+    var parts=key.split('-');var y=parts[0],m=parts[1];
+    var div=document.createElement('div');div.className='archive-item';
+    div.innerHTML='<div><div class="archive-item-name">'+MONTHS_FR[parseInt(m)-1]+' '+y+'</div>'
+      +'<div style="font-size:13px;color:var(--ink-light);font-style:italic">'+paid.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac payes sur '+total.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac</div></div>'
+      +'<div class="archive-item-total">'+total.toLocaleString('fr-FR',{minimumFractionDigits:2})+' \u20ac</div>';
+    div.onclick=function(){viewYear=parseInt(y);viewMonth=parseInt(m)-1;renderMonthly();el.classList.remove('open');};
+    el.appendChild(div);
+  });
+}
+
+function changeMonth(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function renderCalendar(){
+  var el=document.getElementById('cal-days');if(!el)return;
+  document.getElementById('cal-month-label').textContent=MONTHS_FR[calMonth]+' '+calYear;
+  el.innerHTML='';
+  var first=new Date(calYear,calMonth,1);
+  var dow=first.getDay();if(dow===0)dow=7;
+  var dim=new Date(calYear,calMonth+1,0).getDate();
+  var dip=new Date(calYear,calMonth,0).getDate();
+  var today=new Date();
+  for(var i=dow-1;i>0;i--){var dd=document.createElement('div');dd.className='cal-day other-month';dd.innerHTML='<div class="cal-day-num">'+(dip-i+1)+'</div>';el.appendChild(dd);}
+  for(var d=1;d<=dim;d++){
+    var mo=calMonth+1;
+    var key=calYear+'-'+(mo<10?'0':'')+mo+'-'+(d<10?'0':'')+d;
+    var isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    var isW=key==='2026-05-30';
+    var evs=(data.events&&data.events[key])||[];
+    var div=document.createElement('div');
+    div.className='cal-day'+(isToday?' today':'')+(isW?' wedding-day':'');
+    var eh=evs.map(function(e){return '<div class="cal-event-dot '+e.type+'">'+(e.type==='rdv'?'RDV':'Pmt')+' '+esc(e.title)+'</div>';}).join('');
+    if(isW)eh='<div class="cal-event-dot rdv">Mariage !</div>'+eh;
+    div.innerHTML='<div class="cal-day-num">'+d+'</div><div>'+eh+'</div>';
+    (function(k){div.onclick=function(){openEventModal(k);};})(key);
+    el.appendChild(div);
+  }
+}
+function renderUpcoming(){
+  var ul=document.getElementById('upcoming-list');var emp=document.getElementById('upcoming-empty');
+  if(!ul)return;ul.innerHTML='';
+  var ts=new Date().toISOString().slice(0,10);
+  var future=[];
+  if('2026-05-30'>=ts)future.push({key:'2026-05-30',title:'Notre mariage !',type:'rdv'});
+  Object.keys(data.events||{}).forEach(function(k){if(k>=ts)data.events[k].forEach(function(e){future.push({key:k,title:e.title,type:e.type});});});
+  future.sort(function(a,b){return a.key.localeCompare(b.key);});
+  var shown=future.slice(0,8);
+  if(!shown.length){emp.style.display='block';return;}emp.style.display='none';
+  shown.forEach(function(ev){
+    var li=document.createElement('li');li.className='event-item';
+    var d=new Date(ev.key+'T00:00:00');
+    var diff=Math.ceil((d-new Date())/86400000);
+    var label=diff===0?'Auj.':diff===1?'Demain':'J-'+diff;
+    var soon=diff<=7?'<span class="upcoming-soon">!</span>':'';
+    li.innerHTML=soon+'<span class="upcoming-date">'+label+'</span><span class="event-badge '+(ev.type||'rdv')+'">'+(ev.type==='paiement'?'Paiement':'RDV')+'</span><span style="flex:1">'+esc(ev.title)+'</span><span style="font-size:12px;color:var(--ink-light)">'+d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'</span>';
+    ul.appendChild(li);
+  });
+}
+var curEvKey='';
+function openEventModal(key){
+  curEvKey=key;
+  var d=new Date(key+'T00:00:00');
+  document.getElementById('event-modal-date').textContent=d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  renderEventList();document.getElementById('event-modal').classList.add('open');
+}
+function closeEventModal(){document.getElementById('event-modal').classList.remove('open');document.getElementById('new-event-title').value='';curEvKey='';}
+function renderEventList(){
+  var ul=document.getElementById('event-list');ul.innerHTML='';
+  var evs=(data.events&&data.events[curEvKey])||[];
+  if(curEvKey==='2026-05-30'){var li=document.createElement('li');li.className='event-item';li.innerHTML='<span class="event-badge rdv">Mariage</span><span>Notre grand jour !</span>';ul.appendChild(li);}
+  evs.forEach(function(ev,i){var li=document.createElement('li');li.className='event-item';li.innerHTML='<span class="event-badge '+ev.type+'">'+(ev.type==='paiement'?'Paiement':'RDV')+'</span><span style="flex:1">'+esc(ev.title)+'</span><button class="btn-del" onclick="delEvent(\''+curEvKey+'\','+i+')">&#10005;</button>';ul.appendChild(li);});
+  if(!evs.length&&curEvKey!=='2026-05-30')ul.innerHTML='<li style="font-family:Cormorant Garamond,serif;font-size:15px;color:var(--ink-light);font-style:italic;padding:8px 0">Aucun evenement ce jour</li>';
+}
+function addEvent(){
+  var t=document.getElementById('new-event-title').value.trim();var type=document.getElementById('new-event-type').value;if(!t)return;
+  if(!data.events[curEvKey])data.events[curEvKey]=[];
+  data.events[curEvKey].push({title:t,type:type});
+  document.getElementById('new-event-title').value='';
+  renderEventList();renderCalendar();renderUpcoming();scheduleSave();
+}
+function delEvent(key,i){data.events[key].splice(i,1);if(!data.events[key].length)delete data.events[key];renderEventList();renderCalendar();renderUpcoming();scheduleSave();}
+
+var WEDDING=new Date('2026-05-30T11:00:00');
+function updateTimer(){
+  var diff=WEDDING-new Date();
+  if(diff<0){document.querySelector('.timer-bar').innerHTML='<span style="font-family:Great Vibes,cursive;font-size:24px;color:var(--gold-light)">Felicitations N &amp; A !</span>';return;}
+  var d=Math.floor(diff/86400000);diff-=d*86400000;
+  var h=Math.floor(diff/3600000);diff-=h*3600000;
+  var m=Math.floor(diff/60000);diff-=m*60000;
+  var s=Math.floor(diff/1000);
+  document.getElementById('t-days').textContent=(d<10?'0':'')+d;
+  document.getElementById('t-hours').textContent=(h<10?'0':'')+h;
+  document.getElementById('t-mins').textContent=(m<10?'0':'')+m;
+  document.getElementById('t-secs').textContent=(s<10?'0':'')+s;
+}
+updateTimer();setInterval(updateTimer,1000);
+loadFromCloud();
+</script>
+
+</body>
+</html>
